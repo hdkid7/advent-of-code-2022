@@ -67,7 +67,7 @@ fn parse_string(command: &str) -> MoveBox  {
 fn get_solution_str(mut final_box: HashMap<u32, Vec<char>>) -> String {
     let mut res = String::new();
 
-    for i in 1..final_box.len() {
+    for i in 1..final_box.len() + 1 {
         let stack = final_box.get_mut(&(i as u32)).unwrap();
         let char = stack.pop().unwrap();
 
