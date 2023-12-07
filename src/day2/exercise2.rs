@@ -2,113 +2,110 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+use std::iter::FromIterator;
+use std::fs::read_to_string;
+
+//DAY 2 
+//
+
+// Datastructure
+// id {"red":3, "green": 5, "blue": 7}
+
+
+#[derive(Clone)]
+#[derive(Debug)]
+struct Game {
+    red: u32,
+    blue: u32,
+    green: u32
+}
 
 fn main() {
+    let lines: Vec<String> = read_to_string("input.txt")
+        .unwrap()
+        .lines()
+        .map(String::from)
+        .collect();
+
+    let comparer: Game = Game {
+        red: 12,
+        green: 13,
+        blue: 14
+    };
+
     let mut sum = 0;
 
-    if let Ok(lines) = read_lines("./input.txt") {
-        for line in lines {
-            if let Ok(ref cals) = line {
-                let mut split = cals.split(' ');
+    for x in lines {
+        let game_id = get_game_id(&x);
+        let arr: Vec<Game> = create_game(x.to_string());
+        let result:bool = is_game_possible(arr, comparer.clone());
 
-                let my_tuple = new_code((split.next().unwrap().chars().next().unwrap(), split.next().unwrap().chars().next().unwrap()));
-
-                sum += calculate_score(my_tuple);
-            }
+        if result {
+            sum += game_id
         }
+
     }
 
     println!("{}", sum);
 }
 
-fn new_code(round: (char, char)) -> (char, char) {
-    let (elf_action, player_action) = round;
-
-    let mut new_action = '?';
-
-    if player_action == 'X' {
-        match elf_action {
-            'A' => new_action = 'Z',
-            'B' => new_action = 'X',
-            'C' => new_action = 'Y',
-             _ => new_action = panic!("IMPOSSIBLE VALUE")
-        };
-    } else if player_action == 'Y' {
-        match elf_action {
-            'A' => new_action = 'X',
-            'B' => new_action = 'Y',
-            'C' => new_action = 'Z',
-             _ => new_action = panic!("IMPOSSIBLE VALUE")
-        };
-    }else if player_action == 'Z' {
-        match elf_action {
-            'A' => new_action = 'Y',
-            'B' => new_action = 'Z',
-            'C' => new_action = 'X',
-            _ => new_action = panic!("IMPOSSIBLE VALUE")
-        };
+fn is_game_possible(game_arr: Vec<Game>, comparer: Game) -> bool {
+    for game in game_arr{
+        if comparer.red < game.red || comparer.green < game.green || comparer.blue < game.blue {
+            return false;
+        }
     }
 
-    (round.0, new_action)
+    true
 }
 
-fn calculate_score(round: (char, char)) -> i32 {
-    let (_elf_choice, player_choice) = round;
-
-    let shape_chosen_map = HashMap::from([
-        ('X', 1),
-        ('Y', 2),
-        ('Z', 3)
-    ]);
-
-    let shape_chosen_score = shape_chosen_map.get(&player_choice).unwrap();
-
-     shape_chosen_score + calculate_round_score(round)
+fn get_game_id(line_input: &str) -> u32 {
+    let string_arr: Vec<&str> = line_input.split(":").map(|x| x.trim()).collect();
+    string_arr[0].replace("Game ","").parse::<u32>().unwrap()
 }
 
-fn calculate_round_score(round: (char, char)) -> i32 {
-    let elf_choice = rock_paper_conversion(round.0);
-    let player_choice = rock_paper_conversion(round.1);
+fn create_game(line_input: String) -> Vec<Game>  {
+    let string_arr: Vec<&str> = line_input.split(":").map(|x| x.trim()).collect();
 
-    if elf_choice == 1 {
-        return match player_choice {
-            1 => 3,
-            2 => 6,
-            3 => 0,
-            _ => 0
+    let games_arr: Vec<&str> = string_arr[1].split(";").map(|x| x.trim()).collect();
+    
+    create_game_arr(games_arr)
+}
+
+fn create_game_arr(string_input_arr: Vec<&str>) -> Vec<Game>  {
+
+    let mut result: Vec<Game> = [].to_vec();
+
+    for string_input in string_input_arr {
+        let mut hash_map: HashMap<&str, u32> = HashMap::from_iter([("red", 0), ("green", 0), ("blue", 0)]);
+        let color_str_arr: Vec<&str> = string_input.split(",").map(|x| x.trim()).collect();
+
+        for color_str in color_str_arr {
+            let arr: Vec<&str> = color_str.split(" ").collect();
+            let number = arr[0].parse::<u32>().unwrap();
+            let color = arr[1];
+
+            *hash_map.entry(color).or_insert(number) += number;
+
+
+
+        }
+
+        let game = Game {
+            red: *hash_map.get("red").unwrap(),
+            green: *hash_map.get("green").unwrap(),
+            blue: *hash_map.get("blue").unwrap()
         };
-    }else if elf_choice == 2 {
-        return match player_choice {
-            1 => 0,
-            2 => 3,
-            3 => 6,
-            _ => 0
-        };
-    }else if elf_choice == 3 {
-        return match player_choice {
-            1 => 6,
-            2 => 0,
-            3 => 3,
-            _ => 0
-        };
+
+        result.push(game);
+
+
     }
 
-    0
+    println!("{:?}", result);
+
+    result
 }
-
-fn rock_paper_conversion(choice: char) -> i32 {
-    let shape_chosen_map = HashMap::from([
-        ('X', 1),
-        ('Y', 2),
-        ('Z', 3),
-        ('A', 1),
-        ('B', 2),
-        ('C', 3)
-    ]);
-
-    *shape_chosen_map.get(&choice).unwrap()
-}
-
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where P: AsRef<Path>, {
